@@ -222,6 +222,7 @@ async function startTranscription() {
 
         // 成功: SRTファイルが生成された
         updateTranscriptionProgress('完了！', 100);
+        playCompletionSound();
         srtResultPath.textContent = `保存先: ${result.srt_path}`;
         srtResult.classList.remove('hidden');
 
@@ -320,6 +321,7 @@ async function generateChapters() {
         }
 
         resultSection.classList.remove('hidden');
+        playCompletionSound();
     } catch (error) {
         alert(`エラー: ${error.message}`);
         console.error(error);
@@ -423,6 +425,18 @@ function generateTextContent() {
 }
 
 // ========== ユーティリティ ==========
+function playCompletionSound() {
+    try {
+        const audio = new Audio('/System/Library/Sounds/Glass.aiff');
+        audio.play().catch(() => {
+            // サウンド再生失敗時はビープ音で代替
+            new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdnd3d3d3d3d3d3Z2dXV0c3JxcG9ubWxramloZ2ZlZGNiYWBfXl1cW1pZWFdWVVRTUlFQT05NTExLSkpJSEdHRkVFREREQ0NDQ0NDQ0NDQ0NDRERDREVFR0dISUpLTE1OT1BRUlRVVldZWltcXV9gYWJkZWdoaWtsbW9wcXJ0dXZ3eHl6e3x8fX1+fn5+fn5+fn5+fn19fHx7enl4d3Z1dHNycXBvbm1sa2ppZ2ZlZGNiYWBfXl1cW1o=').play().catch(() => { });
+        });
+    } catch (e) {
+        // 無視
+    }
+}
+
 function formatDuration(ms) {
     const hours = Math.floor(ms / 3600000);
     const minutes = Math.floor((ms % 3600000) / 60000);
