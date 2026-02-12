@@ -232,7 +232,39 @@ async function transcribeWithGemini(filePath, apiKey) {
     // コードブロックのマークダウンを除去
     srtContent = srtContent.replace(/^```srt\n?/m, '').replace(/^```\n?/m, '').trim();
 
+    // タイムスタンプを正規化（HH:MM:SS,mmm形式に統一）
+    srtContent = normalizeSrtTimestamps(srtContent);
+
     return srtContent;
+}
+
+/**
+ * SRTのタイムスタンプを正規化する
+ * Geminiが出力する不正形式を修正:
+ *   "24:41,299" (MM:SS,mmm) → "00:24:41,299" (HH:MM:SS,mmm)
+ *   "1:05:30,000" (H:MM:SS,mmm) → "01:05:30,000"
+ *   "5,299" (S,mmm) → "00:00:05,299"
+ */
+function normalizeSrtTimestamps(srtContent) {
+    return srtContent.replace(
+        /(\d{1,2}(?::\d{1,2}){0,2}),(\d{3})\s*-->\s*(\d{1,2}(?::\d{1,2}){0,2}),(\d{3})/g,
+        (match, start, startMs, end, endMs) => {
+            const fixTime = (timeStr) => {
+                const parts = timeStr.split(':').map(p => parseInt(p, 10));
+                let h, m, s;
+                if (parts.length === 3) {
+                    [h, m, s] = parts;
+                } else if (parts.length === 2) {
+                    h = 0;
+                    [m, s] = parts;
+                } else {
+                    h = 0; m = 0; s = parts[0];
+                }
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            };
+            return `${fixTime(start)},${startMs} --> ${fixTime(end)},${endMs}`;
+        }
+    );
 }
 
 // ========== 音声ファイル選択 ==========
