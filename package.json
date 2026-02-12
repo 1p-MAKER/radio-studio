@@ -1,0 +1,48 @@
+{
+    "name": "radio-studio",
+    "version": "1.0.0",
+    "description": "音声ファイルから字幕生成・チャプター・タイトル・サムネ文言をワンストップで生成するツール",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder --mac"
+    },
+    "keywords": [
+        "radio",
+        "srt",
+        "chapter",
+        "subtitle",
+        "gemini",
+        "whisper"
+    ],
+    "author": "1p-MAKER",
+    "license": "ISC",
+    "devDependencies": {
+        "electron": "^28.0.0",
+        "electron-builder": "^24.9.1"
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.21.0"
+    },
+    "build": {
+        "appId": "com.radio.studio",
+        "productName": "ラジオスタジオ",
+        "mac": {
+            "category": "public.app-category.utilities",
+            "target": "dir"
+        },
+        "files": [
+            "**/*",
+            "!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+            "!node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+            "!node_modules/*.d.ts",
+            "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+            "!.git",
+            "!**/.git"
+        ],
+        "extraFiles": [
+            ".env",
+            "transcriber.py"
+        ]
+    }
+}

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ラジオスタジオ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>🎙️ ラジオスタジオ</h1>
+      <p class="subtitle">音声ファイルから字幕・チャプター・サムネ文言をワンストップ生成</p>
+    </header>
+
+    <!-- APIキー設定 -->
+    <section class="card api-section">
+      <h2>🔑 Gemini APIキー</h2>
+      <div class="input-group">
+        <input type="password" id="apiKeyInput" placeholder="APIキーを入力">
+        <button id="saveApiKeyBtn" class="btn btn-secondary">保存</button>
+      </div>
+      <p class="status" id="apiStatus"></p>
+    </section>
+
+    <!-- ====== STEP 1: 音声ファイル選択 ====== -->
+    <section class="card step-card">
+      <div class="step-header">
+        <span class="step-badge">STEP 1</span>
+        <h2>🎵 音声ファイルを選択</h2>
+      </div>
+      <p class="step-desc">ラジオの音声ファイルを選択してください。字幕（SRT）を自動生成します。</p>
+      <button id="selectAudioBtn" class="btn btn-primary btn-large">
+        🎵 音声ファイルを選択
+      </button>
+      <div id="audioInfo" class="file-info hidden">
+        <span class="file-icon">🎵</span>
+        <span class="file-name" id="audioFileName"></span>
+      </div>
+
+      <!-- 既存SRTを使うオプション -->
+      <div class="or-divider">
+        <span>または</span>
+      </div>
+      <button id="selectSrtBtn" class="btn btn-secondary btn-large">
+        📄 既存のSRTファイルを使う（字幕生成をスキップ）
+      </button>
+      <div id="existingSrtInfo" class="file-info hidden">
+        <span class="file-icon">📄</span>
+        <span class="file-name" id="existingSrtName"></span>
+        <span class="file-meta" id="existingSrtMeta"></span>
+      </div>
+    </section>
+
+    <!-- ====== STEP 2: 字幕生成 ====== -->
+    <section class="card step-card hidden" id="step2Section">
+      <div class="step-header">
+        <span class="step-badge">STEP 2</span>
+        <h2>📝 字幕生成（faster-whisper）</h2>
+      </div>
+      <div id="transcriptionStatus" class="transcription-status">
+        <div class="status-text" id="transcriptionStatusText">待機中</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="transcriptionProgress"></div>
+        </div>
+        <div class="progress-percent" id="transcriptionPercent">0%</div>
+      </div>
+      <div class="step-actions">
+        <button id="startTranscriptionBtn" class="btn btn-accent btn-large">
+          🚀 字幕生成を開始
+        </button>
+        <button id="cancelTranscriptionBtn" class="btn btn-secondary hidden">
+          ⏹ キャンセル
+        </button>
+      </div>
+      <div id="srtResult" class="file-info success-info hidden">
+        <span class="file-icon">✅</span>
+        <span class="file-name" id="srtResultPath"></span>
+      </div>
+    </section>
+
+    <!-- ====== STEP 3: チャプター・タイトル・サムネ文言生成 ====== -->
+    <section class="card step-card hidden" id="step3Section">
+      <div class="step-header">
+        <span class="step-badge">STEP 3</span>
+        <h2>📻 チャプター＆サムネ文言生成（Gemini AI）</h2>
+      </div>
+
+      <!-- SRT情報 -->
+      <div id="srtInfo" class="file-info">
+        <span class="file-icon">📄</span>
+        <span class="file-name" id="srtFileName"></span>
+        <span class="file-meta" id="srtFileMeta"></span>
+      </div>
+
+      <!-- 分割設定 -->
+      <div class="split-settings">
+        <h3>⏱️ 分割設定（オプション）</h3>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="splitMode" value="none" checked>
+            <span>分割しない</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="splitMode" value="time">
+            <span>時間で分割：</span>
+            <input type="text" id="splitTime" class="time-input" value="30:00" disabled>
+            <span>で分ける</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="splitMode" value="half">
+            <span>2等分する</span>
+          </label>
+        </div>
+      </div>
+
+      <button id="generateBtn" class="btn btn-accent btn-large">
+        🚀 チャプター＆サムネ文言生成
+      </button>
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span>Gemini AIで分析中...</span>
+      </div>
+    </section>
+
+    <!-- ====== 結果表示 ====== -->
+    <section class="card result-section hidden" id="resultSection">
+      <h2>🖼️ サムネイル作成</h2>
+
+      <!-- 前半/全体用サムネ -->
+      <div id="thumbSection1" class="thumb-generator">
+        <h3 id="thumbTitle1">サムネイル画像</h3>
+        <div class="thumb-controls">
+          <div class="file-drop-zone" id="dropZone1">
+            <span class="drop-text">背景画像をドロップ<br>またはクリックして選択</span>
+            <input type="file" id="bgInput1" accept="image/*" class="hidden">
+          </div>
+          <div class="thumb-text-controls">
+            <label>文言パターン選択:</label>
+            <select id="textPattern1" class="pattern-select">
+              <option value="0">案1（インパクト）</option>
+              <option value="1">案2（具体化）</option>
+              <option value="2">案3（問いかけ）</option>
+            </select>
+            <div class="text-inputs">
+              <input type="text" id="thumbMain1" placeholder="メイン文言" class="thumb-input main">
+              <input type="text" id="thumbSub1" placeholder="サブ文言" class="thumb-input sub">
+            </div>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="thumbCanvas1" width="1280" height="720"></canvas>
+          <button id="downloadThumb1" class="btn btn-sm">💾 画像保存</button>
+        </div>
+      </div>
+
+      <!-- 後半用サムネ（分割時のみ表示） -->
+      <div id="thumbSection2" class="thumb-generator hidden"
+        style="margin-top: 30px; border-top: 1px dashed var(--border); padding-top: 20px;">
+        <h3>後半用サムネイル画像</h3>
+        <div class="thumb-controls">
+          <div class="file-drop-zone" id="dropZone2">
+            <span class="drop-text">背景画像をドロップ<br>またはクリックして選択</span>
+            <input type="file" id="bgInput2" accept="image/*" class="hidden">
+          </div>
+          <div class="thumb-text-controls">
+            <label>文言パターン選択:</label>
+            <select id="textPattern2" class="pattern-select">
+              <option value="0">案1（インパクト）</option>
+              <option value="1">案2（具体化）</option>
+              <option value="2">案3（問いかけ）</option>
+            </select>
+            <div class="text-inputs">
+              <input type="text" id="thumbMain2" placeholder="メイン文言" class="thumb-input main">
+              <input type="text" id="thumbSub2" placeholder="サブ文言" class="thumb-input sub">
+            </div>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="thumbCanvas2" width="1280" height="720"></canvas>
+          <button id="downloadThumb2" class="btn btn-sm">💾 画像保存</button>
+        </div>
+      </div>
+
+      <h2>📝 生成結果</h2>
+      <div id="resultContent" class="result-content"></div>
+      <div class="result-actions">
+        <button id="saveBtn" class="btn btn-primary">💾 SRTで保存</button>
+        <button id="saveTxtBtn" class="btn btn-primary">📄 テキストで保存</button>
+        <button id="copyBtn" class="btn btn-secondary">📋 コピー</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="srt-parser.js"></script>
+  <script src="gemini-api.js"></script>
+  <script src="renderer.js"></script>
+</body>
+
+</html>
