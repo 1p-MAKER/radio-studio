@@ -166,32 +166,33 @@ async function transcribeWithGemini(filePath, apiKey) {
         percentage: 50
     });
 
-    const prompt = `あなたは高精度な日本語音声文字起こしの専門家です。
-この音声ファイルをSRT字幕形式で正確に文字起こししてください。
+    const prompt = `あなたはプロの日本語音声文字起こしスペシャリストです。
+この音声ファイルを聞いて、正確にSRT字幕形式で文字起こししてください。
 
-【ルール】
-1. 出力はSRT形式のみ（余計な説明は不要）
-2. タイムスタンプは正確に、発話区間ごとに区切る
-3. 1エントリは1〜3文程度（長すぎず短すぎず）
-4. 口語表現はそのまま（「えっと」「まあ」なども含める）
-5. 句読点を適切に入れる
-6. 固有名詞は文脈から正しく判別する
-7. 1行は20文字程度で折り返す
-8. 番号は1から連番
+【絶対ルール】
+1. 出力はSRT形式のテキストのみ。前後に説明文やマークダウンは一切付けない
+2. 音声に含まれるすべての発話を漏れなく書き起こす（省略・要約は厳禁）
+3. タイムスタンプは音声の実際の発話タイミングに正確に合わせる
+4. 1エントリは1〜2文程度、長くても3秒〜8秒の区間にする
+5. 句読点（、。！？）を適切に入れる
+6. 聞き取れない部分は（聞き取り不明）と表記する（推測で埋めない）
+7. 話者が複数いる場合は、できれば発話者を区別する
+8. 「えっと」「あの」「まあ」など口語表現はそのまま残す
+9. 固有名詞・人名・地名は文脈から正しく判別する
+10. SRTの番号は1から連番
 
-【SRTフォーマット例】
+【SRTフォーマット】
 1
 00:00:00,000 --> 00:00:03,500
 こんにちは、今日も
 ラジオを始めていきます
 
 2
-00:00:03,500 --> 00:00:07,200
-今回のテーマは
-こちらになります`;
+00:00:03,800 --> 00:00:07,200
+今回のテーマはこちらです`;
 
     const generateRes = await fetch(
-        `${GEMINI_API_BASE}/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `${GEMINI_API_BASE}/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -203,8 +204,8 @@ async function transcribeWithGemini(filePath, apiKey) {
                     ]
                 }],
                 generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 65536
+                    temperature: 0.0,
+                    maxOutputTokens: 131072
                 }
             })
         }
